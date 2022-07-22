@@ -7,7 +7,7 @@ trigger:
 - main
 
 pool:
-  letong-test
+  vmImage: wenjiao-test
 
 steps:
 - script: echo Hello, world!
