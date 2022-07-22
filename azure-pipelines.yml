@@ -6,8 +6,7 @@
 trigger:
 - main
 
-pool:
-  vmImage: wenjiao-test
+pool: wenjiao-test
 
 steps:
 - script: echo Hello, world!
