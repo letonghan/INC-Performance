@@ -15,17 +15,44 @@ variables:
 
 stages:
 - stage: Build
-  displayName: Build and push stage
+  displayName: 'Build and push stage'
   jobs:
   - job: Build
-    displayName: Build
+    displayName: 'Build'
     steps:
     - task: Docker@2
-      displayName: Login to repo
+      displayName: 'Login to repo'
       inputs:
         command: login
         containerRegistry: inc-internal
         
     - script: docker build --build-arg PYTHON=${PYTHON} --build-arg INC_BRANCH=${INC_BRANCH} -f docker/Dockerfile.devel -t ${IMAGE_NAME}:${IMAGE_TAG} .
       displayName: 'Build Container'
+
+- stage: Tuning
+  dependsOn: Build
+  displayName: Tuning Pytorch Model
+  jobs:
+  - job: Quantization
+    displayName: Run Tuning
+    steps:
+      - script: 
+          pip install transformers==4.10.0
+          pip install -r neural-compressor/examples/pytorch/nlp/huggingface_models/text-classification/quantization/ptq_static/fx/requirements.txt
+          pip install torch
+        displayName: 'Install requirements'
+      - script: 
+          python -u neural-compressor/examples/pytorch/nlp/huggingface_models/text-classification/quantization/ptq_static/fx/run_qa.py 
+          --model_name_or_path "bert-large-uncased-whole-word-masking-finetuned-squad" 
+          --dataset_name "squad" 
+          --do_eval 
+          --do_train 
+          --max_seq_length 128 
+          --per_device_eval_batch_size ${batch_size} 
+          --no_cuda 
+          --output_dir /path/to/checkpoint/dir 
+          --tune 
+          --overwrite_output_dir 
+          --dataloader_drop_last
+        displayName: 'Tuning'
     
